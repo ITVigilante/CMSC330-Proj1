@@ -1,9 +1,82 @@
+import java.util.Arrays;
+import java.util.List;
+import java.util.Stack;
+import java.util.logging.FileHandler;
+
 public class ParseTree {
-    public String token = "";
+    private Stack<String> tokenStack;
+    private String token;
+    private String contents;
+
+    //Regex patterns that are used for the lexer
+    private final String regexNum ="\\d+$";
+    private final String regexWhiteSpace = "\\s";
+    private final String regexLeftParenthesis="\\(";
+    private final String regexRightParenthesis="\\)";
+    private final String regexPeriod = "\\.";
+    private final String regexColon = "\\:";
+    private final String regexSemiColon = "\\;";
+    private final String regexComma = "\\,";
+    private final String regexLetter = "[a-z]|[A-Z]";
+    private final String regexQuote = "\"";
+    public ParseTree(String fileName)
+    {
+        token = "";
+        contents = new HandleAFile().returnFileContents(fileName);
+        tokenStack = new Stack<>();
+        lexer();
+        parseGui();
+    }
+
+    /******************************************************
+    *Analyzes the incoming text and makes sure it has valid
+    *tokens for the syntax we are looking for. Once th
+    *******************************************************/
+    private boolean lexer()
+    {
+        Stack <String> stack = new Stack<>();
+        String tempString = ""; //This will be our token builder to push to the stack
+        for (int x=0; x < contents.length(); x++ )
+        {
+            char aChar = contents.charAt(x);
+            String str = String.valueOf(aChar); //Convert char back to string\
+            //Check Special symbols
+            if(str.matches(regexLeftParenthesis)||str.matches(regexRightParenthesis)||str.matches(regexPeriod)||str.matches(regexSemiColon)||str.matches(regexColon)||str.matches(regexComma)||str.matches(regexQuote))
+            {
+                if(!tempString.isEmpty())
+                    stack.push(tempString);
+                tempString = "";
+                stack.push(str);
+            }
+            else if(str.matches(regexWhiteSpace)) {
+                //If our custom string is not empty, push our built string to the stack and empty our string
+                if(!tempString.isEmpty())
+                {
+                    stack.push(tempString);
+                    tempString = "";
+                }
+            }
+            else if(str.matches(regexNum) || str.matches(regexLetter)) {
+                tempString = tempString + str;
+            }
+            else{
+                return false; //Invalid Token Detected
+            }
+        }
+
+        //Finally add the temp stack to our global token stack
+        int stackStartSize = stack.size();
+        for(int x = 0; x<stackStartSize;x++)
+        {
+            tokenStack.push(stack.pop());
+        }
+        return true;
+    }
 
     public String getNextToken()
     {
-        return "";
+
+        return tokenStack.pop();
     }
 
     public boolean parseGui()
