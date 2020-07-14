@@ -1,12 +1,13 @@
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
-import java.util.logging.FileHandler;
 
 public class GUIAnalyzer {
     private Stack<String> tokenStack;
     private String token;
     private String contents;
+    private String baseWord;
+    private P1GUI p1GUI;
 
     //Regex patterns that are used for the lexer
     private final String regexNum = "\\d+$";
@@ -24,6 +25,7 @@ public class GUIAnalyzer {
         token = "";
         contents = new HandleAFile().returnFileContents(fileName);
         tokenStack = new Stack<>();
+        p1GUI = new P1GUI();
 
     }
 
@@ -55,17 +57,13 @@ public class GUIAnalyzer {
                 {
                     stack.push("");
                 }
-
                 continue;
-
-
             } else if (str.matches(regexNum) || str.matches(regexLetter)) {
                 tempString = tempString + str;
             } else {
                 return false; //Invalid Token Detected
             }
         }
-
         //Finally add the temp stack to our global token stack
         int stackStartSize = stack.size();
         for (int x = 0; x < stackStartSize; x++) {
@@ -76,42 +74,47 @@ public class GUIAnalyzer {
 
     public boolean parseTree() {
         if (parseGUI())
-            return true;
+            return true; //Now I need to create the gui using the tokens. This is where I am stuck
         else
             return false;
     }
 
     private boolean parseGUI() {
+        List<String> guiComponents = new ArrayList<>();
         token = getNextToken();
         if (token.equals("Window")) {
             token = getNextToken();
+            guiComponents.add(token);
             //Here we can assume the next token is a string given that we can pass the value to the token..... I could be wrong.
             token = getNextToken();
             if (token.matches(regexLeftParenthesis)){
                 token = getNextToken();
                 if (token.matches(regexNum)) // If the pattern matches that of an integer
                 {
+                    guiComponents.add(token);
                     token = getNextToken();
                     if (token.matches(regexComma)){
                         token = getNextToken();
                         if (token.matches(regexNum)) {
+                            guiComponents.add(token);
                             token = getNextToken();
                             if (token.matches(regexRightParenthesis)){
                                 token = getNextToken();
+                                //from here we can generate thw window
+                                p1GUI.generateWindow(guiComponents);
                                 if (parseLayout()) {
                                     token = getNextToken();
                                     if (parseWidgets()) {
                                         //token = getNextToken();
                                         if (token.equals("End")) {
                                             token = getNextToken();
-
                                             if (token.matches(regexPeriod)){
+                                                p1GUI.endWindow();
                                                 return true;
                                             }
 
                                         }
                                     }
-
                                 }
                             }
                         }
@@ -119,7 +122,6 @@ public class GUIAnalyzer {
                 }
             }
         }
-
         return false;
     }
 
@@ -159,10 +161,8 @@ public class GUIAnalyzer {
                                         if (token.matches(regexNum)) {
                                             token = getNextToken();
                                         }
-
                                     }
                                 }
-
                             }
                             if (token.matches(regexRightParenthesis)){
                                 return true;
@@ -171,7 +171,6 @@ public class GUIAnalyzer {
                     }
                 }
             }
-
         }
         return false;
     }
