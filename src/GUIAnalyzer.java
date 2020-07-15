@@ -6,8 +6,9 @@ public class GUIAnalyzer {
     private Stack<String> tokenStack;
     private String token;
     private String contents;
-    private String baseWord;
     private P1GUI p1GUI;
+    private boolean fromFrame;
+    private boolean fromPanel;
 
     //Regex patterns that are used for the lexer
     private final String regexNum = "\\d+$";
@@ -22,6 +23,8 @@ public class GUIAnalyzer {
     private final String regexQuote = "\"";
 
     public GUIAnalyzer(String fileName) {
+        fromFrame = false;
+        fromPanel =false;
         token = "";
         contents = new HandleAFile().returnFileContents(fileName);
         tokenStack = new Stack<>();
@@ -102,7 +105,9 @@ public class GUIAnalyzer {
                                 token = getNextToken();
                                 //from here we can generate thw window
                                 p1GUI.generateWindow(guiComponents);
+                                fromFrame = true;
                                 if (parseLayout()) {
+                                    //p1GUI.generateFlow();
                                     token = getNextToken();
                                     if (parseWidgets()) {
                                         //token = getNextToken();
@@ -126,6 +131,7 @@ public class GUIAnalyzer {
     }
 
     private boolean parseLayout() {
+        List<String> layoutComp;
         if (token.equals("Layout")) {
             token = getNextToken();
             if (parseLayout_type()) {
@@ -140,31 +146,56 @@ public class GUIAnalyzer {
 
     private boolean parseLayout_type() {
         if (token.equals("Flow")) {
-            return true;
+                if(fromFrame)
+                {
+                    p1GUI.generateFlow(1);
+
+                }
+                else if (fromPanel)
+                {
+                    p1GUI.generateFlow(2);
+                }
+                return true;
+
+
         } else if (token.equals("Grid")) {
+            List<String> gridComp = new ArrayList<>();
             token = getNextToken();
             if (token.matches(regexLeftParenthesis)){
                 token = getNextToken();
                 if (token.matches(regexNum)) // If the pattern matches that of an integer
                 {
+                    gridComp.add(token);
                     token = getNextToken();
                     if (token.matches(regexComma)){
                         token = getNextToken();
                         if (token.matches(regexNum)) {
+                            gridComp.add(token);
                             token = getNextToken();
                             if (token.matches(regexComma)){
                                 token = getNextToken();
                                 if (token.matches(regexNum)) {
+                                    gridComp.add(token);
                                     token = getNextToken();
                                     if (token.matches(regexComma)){
                                         token = getNextToken();
                                         if (token.matches(regexNum)) {
+                                            gridComp.add(token);
                                             token = getNextToken();
                                         }
                                     }
                                 }
                             }
                             if (token.matches(regexRightParenthesis)){
+                                if(fromFrame)
+                                {
+                                    p1GUI.generateGrid(1, gridComp);
+
+                                }
+                                else if (fromPanel)
+                                {
+                                    p1GUI.generateGrid(2, gridComp);
+                                }
                                 return true;
                             }
                         }
@@ -190,40 +221,57 @@ public class GUIAnalyzer {
     private boolean parseWidget() {
         if (token.equals("Button")) {
             token = getNextToken();
+            String text = token;
             token = getNextToken();
             if (token.matches(regexSemiColon)){
+                if(fromFrame)
+                    p1GUI.generateButton(1,text);
+                else if (fromPanel)
+                    p1GUI.generateButton(2,text);
                 return true;
             }
 
         } else if (token.equals("Group")) {
             token = getNextToken();
+            p1GUI.generateGroup();
             if (parseRadio_buttons()) {
                 token = getNextToken();
                 if (token.equals("End")) {
                     token = getNextToken();
                     if (token.matches(regexSemiColon)){
+
                         return true;
                     }
                 }
             }
 
         } else if (token.equals("Label")) {
-
             token = getNextToken();
+            String text = token;
             token = getNextToken();
             if (token.matches(regexSemiColon)){
+                if(fromFrame)
+                    p1GUI.generateLabel(1,text);
+                else if (fromPanel)
+                    p1GUI.generateLabel(2,text);
                 return true;
             }
 
         } else if (token.equals("Panel")) {
+            fromFrame = false;
             token = getNextToken();
+            fromPanel = true;
+            p1GUI.generatePanel(); //From here we can call the panel
             if (parseLayout()) {
+
                 token = getNextToken();
                 if (parseWidgets()) {
                     //token = getNextToken();
                     if (token.equals("End")) {
                         token = getNextToken();
                         if (token.matches(regexSemiColon)){
+                            p1GUI.endPanel();
+                            fromPanel = false;
                             return true;
                         }
                     }
@@ -232,8 +280,13 @@ public class GUIAnalyzer {
         } else if (token.equals("Textfield")) {
             token = getNextToken();
             if (token.matches(regexNum)) {
+                int num = Integer.parseInt(token);
                 token = getNextToken();
                 if (token.matches(regexSemiColon)){
+                    if(fromFrame)
+                        p1GUI.generateTextField(1,num);
+                    else if (fromPanel)
+                        p1GUI.generateTextField(2,num);
                     return true;
                 }
             }
@@ -255,7 +308,13 @@ public class GUIAnalyzer {
     private boolean parseRadio_button() {
         if (token.equals("Radio")) {
             token = getNextToken();
+            String text = token;
+            token = getNextToken();
             if (token.matches(regexSemiColon)){
+                if(fromFrame)
+                    p1GUI.generateRadio(1,text);
+                else if (fromPanel)
+                    p1GUI.generateRadio(2,text);
                 return true;
             }
         }
